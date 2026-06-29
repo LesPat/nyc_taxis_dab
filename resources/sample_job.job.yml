@@ -1,0 +1,50 @@
+# Sample orchestration job: notebook → Python wheel task → pipeline refresh.
+
+resources:
+  jobs:
+    sample_job:
+      name: sample_job
+
+      trigger:
+        periodic:
+          interval: 1
+          unit: DAYS
+
+      parameters:
+        - name: catalog
+          default: ${var.catalog}
+        - name: schema
+          default: ${var.schema}
+        - name: taxi_s3_path
+          default: ${var.taxi_s3_path}
+
+      tasks:
+        - task_key: notebook_task
+          notebook_task:
+            notebook_path: ../src/sample_notebook.ipynb
+        - task_key: python_wheel_task
+          depends_on:
+            - task_key: notebook_task
+          python_wheel_task:
+            package_name: nyc_taxis_dab
+            entry_point: main
+            parameters:
+              - "--catalog"
+              - "${var.catalog}"
+              - "--schema"
+              - "${var.schema}"
+              - "--taxi-s3-path"
+              - "${var.taxi_s3_path}"
+          environment_key: default
+        - task_key: refresh_pipeline
+          depends_on:
+            - task_key: notebook_task
+          pipeline_task:
+            pipeline_id: ${resources.pipelines.nyc_taxis_etl.id}
+
+      environments:
+        - environment_key: default
+          spec:
+            environment_version: "4"
+            dependencies:
+              - ../dist/*.whl

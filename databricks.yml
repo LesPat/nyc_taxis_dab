@@ -1,0 +1,41 @@
+# Databricks Asset Bundle for NYC taxis ETL.
+# See https://docs.databricks.com/dev-tools/bundles/index.html
+bundle:
+  name: nyc_taxis_dab
+  uuid: 103e919b-2c38-44a9-830b-d9282676d1d6
+
+include:
+  - resources/*.yml
+
+artifacts:
+  python_artifact:
+    type: whl
+    build: uv build --wheel
+
+variables:
+  catalog:
+    description: Unity Catalog catalog for pipeline output tables
+  schema:
+    description: Unity Catalog schema for pipeline output tables
+  taxi_s3_path:
+    description: S3 path to raw taxi fare files (External Data)
+  weather_s3_path:
+    description: S3 path to raw weather files (External Data)
+  taxi_pickup_column:
+    description: Taxi pickup timestamp column used for hourly weather join
+  weather_datetime_column:
+    description: Weather timestamp column (hourly rows)
+
+targets:
+  dev:
+    mode: development
+    default: true
+    workspace:
+      host: https://dbc-c1f52266-9fee.cloud.databricks.com
+    variables:
+      catalog: workspace
+      schema: ${workspace.current_user.short_name}
+      taxi_s3_path: s3://nyc-taxis-traffic-analysis-raw/stg_taxis_data/
+      weather_s3_path: s3://nyc-taxis-traffic-analysis-raw/weather/
+      taxi_pickup_column: tpep_pickup_datetime
+      weather_datetime_column: datetime
