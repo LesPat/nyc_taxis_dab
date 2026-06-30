@@ -1,0 +1,22 @@
+# Lakeflow Spark Declarative Pipeline for NYC taxi ETL.
+
+resources:
+  pipelines:
+    nyc_taxis_gold:
+      name: nyc_taxis_gold
+      catalog: ${var.catalog}
+      schema: ${var.gold_schema}
+      serverless: true
+      root_path: "../src/nyc_taxis_gold"
+
+      configuration:
+        catalog: ${var.catalog}
+        silver_schema: ${var.silver_schema}
+
+      libraries:
+        - glob:
+            include: ../src/nyc_taxis_gold/transformations/**
+
+      environment:
+        dependencies:
+          - --editable ${workspace.file_path}

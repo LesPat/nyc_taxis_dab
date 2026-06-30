@@ -5,15 +5,16 @@ resources:
     nyc_taxis_etl:
       name: nyc_taxis_etl
       catalog: ${var.catalog}
-      schema: ${var.schema}
+      schema: ${var.silver_schema}
       serverless: true
       root_path: "../src/nyc_taxis_etl"
 
       configuration:
         taxi_s3_path: ${var.taxi_s3_path}
         weather_s3_path: ${var.weather_s3_path}
-        taxi_pickup_column: ${var.taxi_pickup_column}
-        weather_datetime_column: ${var.weather_datetime_column}
+        taxi_zone_lookup_table: ${var.taxi_zone_lookup_table}
+        weather_codes_table: ${var.weather_codes_table}
+        weather_time_column: ${var.weather_time_column}
 
       libraries:
         - glob:

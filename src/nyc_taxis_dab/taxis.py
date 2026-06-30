@@ -45,3 +45,8 @@ def load_taxi_fares(path: str | None = None) -> DataFrame:
     """Read raw taxi fares from S3 (Parquet + optional CSV in the same folder)."""
     s3_path = path or spark.conf.get("taxi_s3_path")
     return read_s3_mixed(s3_path)
+
+def read_silver_table(table_name: str = "nyc_taxis_silver") -> DataFrame:
+    catalog = spark.conf.get("catalog")
+    silver_schema = spark.conf.get("silver_schema")
+    return spark.read.table(f"{catalog}.{silver_schema}.{table_name}")

@@ -14,17 +14,21 @@ artifacts:
 
 variables:
   catalog:
-    description: Unity Catalog catalog for pipeline output tables
-  schema:
-    description: Unity Catalog schema for pipeline output tables
+    description: Project catalog
+  silver_schema:
+    description: Silver-layer tables
+  gold_schema:
+    description: Gold-layer tables
   taxi_s3_path:
-    description: S3 path to raw taxi fare files (External Data)
+    description: S3 path to raw taxi fare files (one folder; monthly files are combined automatically)
   weather_s3_path:
     description: S3 path to raw weather files (External Data)
-  taxi_pickup_column:
-    description: Taxi pickup timestamp column used for hourly weather join
-  weather_datetime_column:
-    description: Weather timestamp column (hourly rows)
+  taxi_zone_lookup_table:
+    description: Unity Catalog table for taxi zone lookup
+  weather_codes_table:
+    description: Unity Catalog reference table for weather condition codes
+  weather_time_column:
+    description: Hourly weather timestamp column used for joining taxi pickups
 
 targets:
   dev:
@@ -33,9 +37,12 @@ targets:
     workspace:
       host: https://dbc-c1f52266-9fee.cloud.databricks.com
     variables:
-      catalog: workspace
-      schema: ${workspace.current_user.short_name}
+      catalog: nyc_taxi_fares_analysis
+      silver_schema: silver_taxi_fares
+      gold_schema: gold_taxi_fares
       taxi_s3_path: s3://nyc-taxis-traffic-analysis-raw/stg_taxis_data/
       weather_s3_path: s3://nyc-taxis-traffic-analysis-raw/weather/
-      taxi_pickup_column: tpep_pickup_datetime
-      weather_datetime_column: datetime
+      # Unity Catalog reference tables (full three-part names)
+      taxi_zone_lookup_table: nyc_taxis_weather.bronze_nyc_taxis.b_taxi_zone_lookup
+      weather_codes_table: nyc_taxis_weather.bronze_nyc_taxis.b_weather_codes
+      weather_time_column: time
