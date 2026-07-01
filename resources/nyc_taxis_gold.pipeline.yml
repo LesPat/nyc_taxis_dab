@@ -11,7 +11,7 @@ resources:
 
       configuration:
         catalog: ${var.catalog}
-        silver_schema: ${var.silver_schema}
+        silver_schema: ${var.silver_schema_read}
 
       libraries:
         - glob:
@@ -19,4 +19,4 @@ resources:
 
       environment:
         dependencies:
-          - --editable ${workspace.file_path}
+          - ../dist/*.whl

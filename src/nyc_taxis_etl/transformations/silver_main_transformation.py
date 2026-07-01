@@ -14,7 +14,7 @@ This module is the final curated table used for analysis.
 
 from pyspark import pipelines as dp
 from pyspark.sql import DataFrame
-from pyspark.sql.functions import col, date_trunc, round, to_date
+from pyspark.sql.functions import col, date_trunc, round, to_date, coalesce, lit, unix_timestamp
 
 from nyc_taxis_dab.mappings import SILVER_TAXI_COLUMN_MAP
 
@@ -27,21 +27,23 @@ def _drop_columns_if_present(df: DataFrame, *columns: str) -> DataFrame:
 
 def _pickup_zone_lookup(lookup_df: DataFrame) -> DataFrame:
     """Prepare zone lookup for pickup location join (PULocationID → borough/zone names)."""
-    return (
+    return _drop_columns_if_present(
         lookup_df.withColumnRenamed("LocationID", "PULocationID_tmp")
         .withColumnRenamed("Borough", "PUBorough")
-        .withColumnRenamed("Zone", "PUZone")
-        .drop("service_zone")
+        .withColumnRenamed("Zone", "PUZone"),
+        "service_zone",
+        "_rescued_data",
     )
 
 
 def _dropoff_zone_lookup(lookup_df: DataFrame) -> DataFrame:
     """Prepare zone lookup for dropoff location join (DOLocationID → borough/zone names)."""
-    return (
+    return _drop_columns_if_present(
         lookup_df.withColumnRenamed("LocationID", "DOLocationID_tmp")
         .withColumnRenamed("Borough", "DOBorough")
-        .withColumnRenamed("Zone", "DOZone")
-        .drop("service_zone")
+        .withColumnRenamed("Zone", "DOZone"),
+        "service_zone",
+        "_rescued_data",
     )
 
 
@@ -55,7 +57,10 @@ def silver_main_transformation():
     taxis_df = spark.read.table("taxi_fares")
     weather_df = spark.read.table("weather")
     lookup_df = spark.read.table(spark.conf.get("taxi_zone_lookup_table"))
-    w_code_df = spark.read.table(spark.conf.get("weather_codes_table"))
+    w_code_df = spark.read.table(spark.conf.get("weather_codes_table")).select(
+        "w_code",
+        "w_desc",
+    )
 
     weather_time_col = spark.conf.get("weather_time_column")
 
@@ -78,6 +83,8 @@ def silver_main_transformation():
         "datetime",
         weather_time_col,
         "pickup_hour",
+        "_rescued_data",
+        "_c0",
     )
 
     # --- 3. Enrich with zone names (pickup + dropoff) ---
@@ -100,12 +107,18 @@ def silver_main_transformation():
         .join(w_code_df, col("coco") == col("w_code"), how="left")
     )
 
+    result = result.withColumn("w_desc", coalesce(col("w_desc"), lit("Unknown")))
+
     # --- 5. Derived metrics (before column rename) ---
     # trip_duration uses original TLC column names still present at this stage.
     result = result.withColumn(
         "trip_duration",
         round(
-            (col("tpep_dropoff_datetime").cast("long") - col("tpep_pickup_datetime").cast("long")) / 60,
+            (
+                unix_timestamp(col("tpep_dropoff_datetime"))
+                - unix_timestamp(col("tpep_pickup_datetime"))
+            )
+            / 60,
             2,
         ),
     )
@@ -122,6 +135,8 @@ def silver_main_transformation():
         "PULocationID",
         "DOLocationID",
         "congestion_surcharge",
+        "_rescued_data",
+        "_c0",
     )
 
     # --- 7. Standardize names + partition column ---

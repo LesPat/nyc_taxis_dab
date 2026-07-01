@@ -10,13 +10,15 @@ include:
 artifacts:
   python_artifact:
     type: whl
-    build: uv build --wheel
+    build: python3 -m pip wheel . -w dist --no-deps
 
 variables:
   catalog:
     description: Project catalog
   silver_schema:
     description: Silver-layer tables
+  silver_schema_read:
+    description: Resolved silver schema for cross-pipeline reads (dev-prefixed in development mode)
   gold_schema:
     description: Gold-layer tables
   taxi_s3_path:
@@ -39,6 +41,7 @@ targets:
     variables:
       catalog: nyc_taxi_fares_analysis
       silver_schema: silver_taxi_fares
+      silver_schema_read: dev_${workspace.current_user.short_name}_${var.silver_schema}
       gold_schema: gold_taxi_fares
       taxi_s3_path: s3://nyc-taxis-traffic-analysis-raw/stg_taxis_data/
       weather_s3_path: s3://nyc-taxis-traffic-analysis-raw/weather/
