@@ -91,7 +91,7 @@ Output catalog: `nyc_taxi_fares_analysis` (silver and gold schemas defined in `r
 ## Prerequisites
 
 - [Databricks CLI](https://docs.databricks.com/dev-tools/cli/index.html) v1.x, authenticated to your workspace
-- Python 3.10+
+- Python 3.13+
 - Unity Catalog catalog `nyc_taxi_fares_analysis` and read access to the S3 / reference tables above
 
 Workspace host and paths are configured under `targets.dev` in `databricks.yml`.
